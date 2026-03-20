@@ -10,8 +10,8 @@ API_KEY = "AIzaSyDAqdEHHSN-dMSq3Ly1LiqVdQxVheSPS8s"
 
 genai.configure(api_key=API_KEY)
 
-# التعديل هنا: تحديد إصدار الموديل لدعم ملفات الـ PDF
-model = genai.GenerativeModel(model_name='gemini-1.5-flash')
+# استخدام المسار الكامل للموديل لضمان عدم حدوث خطأ 404
+model = genai.GenerativeModel(model_name='models/gemini-1.5-flash')
 
 st.set_page_config(page_title="Teaching Boost AI", layout="centered", page_icon="🚀")
 
@@ -23,35 +23,37 @@ uploaded_file = st.file_uploader("ارفع ملف الـ PDF التعليمي", 
 if uploaded_file:
     with st.spinner("جاري تحليل صفحات الملف بذكاء Gemini..."):
         try:
-            # قراءة الملف
-            pdf_data = uploaded_file.read()
+            # قراءة بيانات الملف
+            pdf_bytes = uploaded_file.read()
             
+            # تجهيز الطلب
             prompt = """
-            أنت خبير تربوي. قم بقراءة محتوى صفحات هذا الملف (حتى لو كانت صوراً) وحوله إلى:
+            أنت خبير تربوي محترف. قم بقراءة محتوى صفحات هذا الملف بالكامل وحوله إلى:
             1. درس منظم بفقرات واضحة.
-            2. ملخص شامل لأهم النقاط.
-            3. 5 أسئلة اختيار من متعدد مع الإجابات الصحيحة في النهاية.
-            ملاحظة: استخرج النص بدقة باللغة العربية واكتبه بتنسيق جميل.
+            2. ملخص شامل لأهم النقاط في شكل نقاط (Bullet points).
+            3. 5 أسئلة اختيار من متعدد مع ذكر الإجابة الصحيحة لكل سؤال.
+            ملاحظة: يجب أن يكون الرد باللغة العربية الفصحى وبتنسيق جذاب.
             """
             
-            # إرسال الملف للموديل
+            # إرسال البيانات كـ Part مباشر
             response = model.generate_content([
                 prompt,
-                {'mime_type': 'application/pdf', 'data': pdf_data}
+                {'mime_type': 'application/pdf', 'data': pdf_bytes}
             ])
             
             final_result = response.text
             
-            st.success("✅ تمت المعالجة بنجاح!")
+            st.success("✅ تم استخراج المحتوى وتنظيمه!")
             st.markdown("---")
             st.markdown(final_result)
             
             # إنشاء ملف Word
             doc = Document()
-            # إضافة دعم اللغة العربية في الملف
+            # إضافة المحتوى
             p = doc.add_paragraph(final_result)
-            p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            p.alignment = WD_ALIGN_PARAGRAPH.RIGHT # محاذاة لليمين
             
+            # حفظ الملف في الذاكرة
             bio = io.BytesIO()
             doc.save(bio)
             
@@ -65,4 +67,3 @@ if uploaded_file:
             
         except Exception as e:
             st.error(f"حدث خطأ تقني: {e}")
-            st.info("نصيحة: تأكد أن حجم الملف ليس ضخماً جداً (أقل من 20 ميجا يفضل).")
