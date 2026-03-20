@@ -4,44 +4,42 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import io
 
-# --- الإعدادات ---
+# إعداد المفتاح
 API_KEY = "AIzaSyDAqdEHHSN-dMSq3Ly1LiqVdQxVheSPS8s"
 genai.configure(api_key=API_KEY)
 
-st.title("🚀 Teaching Boost AI - النسخة المحدثة")
+st.set_page_config(page_title="Teaching Boost AI", page_icon="🚀")
+st.title("🚀 Teaching Boost - الإصدار الاحترافي")
 
 uploaded_file = st.file_uploader("ارفع ملف الـ PDF هنا", type="pdf")
 
 if uploaded_file:
-    with st.spinner("جاري التواصل مع الذكاء الاصطناعي..."):
+    with st.spinner("جاري المعالجة... قد تستغرق دقيقة لأول مرة"):
         try:
-            # قراءة البيانات
-            file_data = uploaded_file.read()
+            # قراءة الملف
+            file_bytes = uploaded_file.read()
             
-            # محاولة استخدام Flash أولاً، وإذا فشل ننتقل لـ Pro
-            try:
-                model = genai.GenerativeModel('gemini-1.5-flash')
-                response = model.generate_content([
-                    {'mime_type': 'application/pdf', 'data': file_data},
-                    "حلل هذا الملف التعليمي بالعربية (درس + ملخص + أسئلة)"
-                ])
-            except:
-                model = genai.GenerativeModel('gemini-pro') # بديل في حال تعذر الفلاش
-                response = model.generate_content("اقرأ ملف PDF وقم بتلخيصه (تنبيه: السيرفر قد يحتاج تحديث)")
+            # محاولة استخدام الموديل المستقر
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            response = model.generate_content([
+                "حلل هذا الملف التعليمي بالعربية. المطلوب: 1- درس منظم، 2- ملخص، 3- خمسة أسئلة اختيار من متعدد مع الأجوبة.",
+                {'mime_type': 'application/pdf', 'data': file_bytes}
+            ])
 
-            if response.text:
-                st.success("✅ تم استخراج البيانات!")
+            if response:
+                st.success("✅ تم استخراج البيانات بنجاح!")
                 st.markdown(response.text)
                 
-                # إنشاء الملف
+                # تحويل إلى Word
                 doc = Document()
                 p = doc.add_paragraph(response.text)
                 p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
                 
                 bio = io.BytesIO()
                 doc.save(bio)
-                st.download_button("📥 تحميل Word", data=bio.getvalue(), file_name="lesson.docx")
+                st.download_button("📥 تحميل ملف Word الجاهز", data=bio.getvalue(), file_name="Teaching_Boost.docx")
 
         except Exception as e:
-            st.error(f"خطأ في السيرفر: {e}")
-            st.warning("تلميح: إذا استمرت 404، انتظر دقيقتين حتى يقوم Streamlit بتحديث المكتبات بعد تعديل requirements.txt")
+            st.error(f"عذراً، السيرفر ما زال يتحدث. الخطأ: {e}")
+            st.info("إذا استمرت 404، يرجى الضغط على الثلاث نقاط بالأعلى في تطبيق Streamlit واختيار 'Reboot App'.")
